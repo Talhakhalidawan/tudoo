@@ -54,4 +54,12 @@ class HabitNotifier extends Notifier<List<Habit>> {
     state = state.where((h) => h.id != id).toList();
     await _saveHabits();
   }
+
+  Future<void> updateHabit(Habit habit) async {
+    state = [
+      for (final h in state)
+        if (h.id == habit.id) habit else h,
+    ];
+    await _saveHabits();
+  }
 }

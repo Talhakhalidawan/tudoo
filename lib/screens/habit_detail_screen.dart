@@ -2,13 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../models/habit.dart';
+import '../models/daily_log.dart';
 import '../providers/streak_provider.dart';
 import '../providers/log_provider.dart';
 import '../theme.dart';
+import 'add_habit_screen.dart';
 
 class HabitDetailScreen extends ConsumerStatefulWidget {
   final Habit habit;
-
   const HabitDetailScreen({super.key, required this.habit});
 
   @override
@@ -18,6 +19,11 @@ class HabitDetailScreen extends ConsumerStatefulWidget {
 class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  DateTime _selectedDate = DateTime(
+    DateTime.now().year,
+    DateTime.now().month,
+    DateTime.now().day,
+  );
 
   @override
   void initState() {
@@ -27,29 +33,34 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen>
 
   @override
   Widget build(BuildContext context) {
-    final streakData = ref.watch(streakProvider(widget.habit));
-    final log = ref
+    final habits = ref.watch(habitProvider);
+    final currentHabit =
+        habits.where((h) => h.id == widget.habit.id).firstOrNull ??
+        widget.habit;
+    final streakData = ref.watch(streakProvider(currentHabit));
+    final logs = ref
         .watch(logProvider)
+        .where((l) => l.habitId == currentHabit.id)
+        .toList();
+    final todayLog = logs
         .where(
-          (l) =>
-              l.habitId == widget.habit.id &&
-              l.date.isAtSameMomentAs(
-                DateTime(
-                  DateTime.now().year,
-                  DateTime.now().month,
-                  DateTime.now().day,
-                ),
-              ),
+          (l) => l.date.isAtSameMomentAs(
+            DateTime(
+              DateTime.now().year,
+              DateTime.now().month,
+              DateTime.now().day,
+            ),
+          ),
         )
         .firstOrNull;
-    final isCompletedToday = log?.isCompleted ?? false;
-    final themeColor = widget.habit.color;
+    final isCompletedToday = todayLog?.isCompleted ?? false;
+    final themeColor = currentHabit.color;
 
     IconData hIcon = Icons.book;
-    if (widget.habit.icon == 'workout') hIcon = Icons.directions_run_rounded;
-    if (widget.habit.icon == 'water') hIcon = Icons.water_drop_rounded;
-    if (widget.habit.icon == 'meditate') hIcon = Icons.spa_rounded;
-    if (widget.habit.icon == 'study') hIcon = Icons.school_rounded;
+    if (currentHabit.icon == 'workout') hIcon = Icons.directions_run_rounded;
+    if (currentHabit.icon == 'water') hIcon = Icons.water_drop_rounded;
+    if (currentHabit.icon == 'meditate') hIcon = Icons.spa_rounded;
+    if (currentHabit.icon == 'study') hIcon = Icons.school_rounded;
 
     return Scaffold(
       body: SafeArea(
@@ -70,7 +81,7 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen>
                       Icon(hIcon, color: themeColor),
                       const SizedBox(width: 8),
                       Text(
-                        widget.habit.name,
+                        currentHabit.name,
                         style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w600,
@@ -79,8 +90,14 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen>
                     ],
                   ),
                   IconButton(
-                    icon: const Icon(Icons.list_rounded),
-                    onPressed: () {},
+                    icon: const Icon(Icons.edit_note_rounded),
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            AddHabitScreen(habit: currentHabit),
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -130,8 +147,6 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen>
                 ),
               ),
               const SizedBox(height: 20),
-
-              // Streak Text
               const Text(
                 'Current Streak 🔥',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
@@ -143,7 +158,7 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen>
               ),
               const SizedBox(height: 24),
 
-              // Tabs using custom styling
+              // Tabs
               Container(
                 decoration: const BoxDecoration(
                   border: Border(
@@ -155,14 +170,8 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen>
                   indicator: UnderlineTabIndicator(
                     borderSide: BorderSide(color: themeColor, width: 2),
                   ),
-                  indicatorSize: TabBarIndicatorSize.tab,
                   labelColor: themeColor,
                   unselectedLabelColor: AppTheme.textMuted,
-                  labelStyle: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  dividerColor: Colors.transparent,
                   tabs: const [
                     Tab(text: 'Calendar'),
                     Tab(text: 'Stats'),
@@ -177,9 +186,9 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen>
                 child: TabBarView(
                   controller: _tabController,
                   children: [
-                    _buildCalendarTab(isCompletedToday, themeColor),
-                    const Center(child: Text('Stats Placeholder')),
-                    _buildNotesTab(themeColor),
+                    _buildCalendarTab(logs, themeColor, isCompletedToday),
+                    _buildStatsTab(logs, themeColor),
+                    _buildNotesTab(logs, themeColor),
                   ],
                 ),
               ),
@@ -190,7 +199,24 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen>
     );
   }
 
-  Widget _buildCalendarTab(bool isCompletedToday, Color themeColor) {
+  Widget _buildCalendarTab(
+    List<DailyLog> logs,
+    Color themeColor,
+    bool isCompletedToday,
+  ) {
+    // Functional Heatmap for this habit
+    final List<double> heatmap = [];
+    final now = DateTime.now();
+    final start = now.subtract(const Duration(days: 104));
+    for (int i = 0; i < 105; i++) {
+      final d = start.add(Duration(days: i));
+      final normalized = DateTime(d.year, d.month, d.day);
+      final log = logs
+          .where((l) => l.date.isAtSameMomentAs(normalized))
+          .firstOrNull;
+      heatmap.add(log != null && log.isCompleted ? 1.0 : 0.0);
+    }
+
     return SingleChildScrollView(
       child: Column(
         children: [
@@ -203,103 +229,35 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen>
             ),
             child: Column(
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      DateFormat('MMMM yyyy').format(DateTime.now()),
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.chevron_left,
-                          color: AppTheme.textMuted,
-                          size: 20,
-                        ),
-                        const SizedBox(width: 8),
-                        const Text(
-                          'Sort',
-                          style: TextStyle(
-                            color: AppTheme.textMuted,
-                            fontSize: 14,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Icon(
-                          Icons.chevron_right,
-                          color: AppTheme.textMuted,
-                          size: 20,
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-                      .map(
-                        (day) => Flexible(
-                          child: Center(
-                            child: Text(
-                              day,
-                              style: const TextStyle(
-                                color: AppTheme.textMuted,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ),
-                        ),
-                      )
-                      .toList(),
-                ),
-                const SizedBox(height: 8),
-
                 GridView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  itemCount: 7 * 15,
+                  itemCount: 105,
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 15,
                     mainAxisSpacing: 4,
                     crossAxisSpacing: 4,
                   ),
                   itemBuilder: (context, index) {
-                    final random = (index * 7) % 10;
-                    Color boxColor = AppTheme.borderColor;
-                    if (random > 8)
-                      boxColor = themeColor;
-                    else if (random > 5)
-                      boxColor = themeColor.withOpacity(0.5);
-                    else if (random > 3)
-                      boxColor = themeColor.withOpacity(0.2);
+                    final val = heatmap[index];
                     return Container(
                       decoration: BoxDecoration(
-                        color: boxColor,
+                        color: val > 0 ? themeColor : AppTheme.borderColor,
                         borderRadius: BorderRadius.circular(3),
                       ),
                     );
                   },
                 ),
-
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 16),
                   child: Divider(color: AppTheme.borderColor),
                 ),
-
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     const Text(
                       'Today',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w500,
-                        fontSize: 14,
-                      ),
+                      style: TextStyle(fontWeight: FontWeight.w500),
                     ),
                     Row(
                       children: [
@@ -320,7 +278,6 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen>
                                 ? themeColor
                                 : AppTheme.textMuted,
                             fontWeight: FontWeight.bold,
-                            fontSize: 14,
                           ),
                         ),
                       ],
@@ -330,132 +287,48 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen>
               ],
             ),
           ),
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            height: 54,
-            child: OutlinedButton(
-              onPressed: () {},
-              style: OutlinedButton.styleFrom(
-                side: BorderSide(color: themeColor),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: Text(
-                'Edit Habit',
-                style: TextStyle(
-                  color: themeColor,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ),
         ],
       ),
     );
   }
 
-  Widget _buildNotesTab(Color themeColor) {
-    return SingleChildScrollView(
+  Widget _buildStatsTab(List<DailyLog> logs, Color themeColor) {
+    final completions = logs.where((l) => l.isCompleted).length;
+    final totalDays = logs.length;
+    final rate = totalDays > 0 ? (completions / totalDays * 100).toInt() : 0;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Horizontal date picker snippet
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _buildMiniDate('Mon', '13', false, themeColor),
-              _buildMiniDate('Tue', '14', false, themeColor),
-              _buildMiniDate('Wed', '15', true, themeColor),
-              _buildMiniDate('Thu', '16', false, themeColor),
-              _buildMiniDate('Fri', '17', false, themeColor),
-            ],
-          ),
-          const SizedBox(height: 24),
-          const Text(
-            'May 15, 2024',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-          ),
-          const SizedBox(height: 16),
+          _statRow('Total Completions', '$completions', themeColor),
+          const SizedBox(height: 12),
+          _statRow('Completion Rate', '$rate%', themeColor),
+          const SizedBox(height: 12),
+          _statRow('Total Logs', '$totalDays', AppTheme.textMuted),
+        ],
+      ),
+    );
+  }
 
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppTheme.bgCard,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppTheme.borderColor),
-            ),
-            child: Stack(
-              children: [
-                const Padding(
-                  padding: EdgeInsets.only(right: 24),
-                  child: Text(
-                    'Studied DSA for 2 hours. Solved problems on arrays and learned something new about sliding window.',
-                    style: TextStyle(color: AppTheme.textMuted, height: 1.6),
-                  ),
-                ),
-                Positioned(
-                  right: 0,
-                  top: 0,
-                  child: Icon(Icons.edit, color: AppTheme.textMuted, size: 16),
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 32),
-          const Text(
-            'How was your day?',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _buildMoodEmoji('😄', 'Great', true, themeColor),
-              _buildMoodEmoji('🙂', 'Good', false, themeColor),
-              _buildMoodEmoji('😐', 'Okay', false, themeColor),
-              _buildMoodEmoji('🙁', 'Bad', false, themeColor),
-              _buildMoodEmoji('😩', 'Terrible', false, themeColor),
-            ],
-          ),
-
-          const SizedBox(height: 32),
-          const Text(
-            'Photos / Attachments',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-          ),
-          const SizedBox(height: 16),
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              border: Border.all(
-                color: AppTheme.textMuted.withOpacity(0.5),
-                style: BorderStyle.none,
-              ),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () {},
-                borderRadius: BorderRadius.circular(12),
-                child: Container(
-                  decoration: BoxDecoration(
-                    border: Border.all(
-                      color: AppTheme.textMuted,
-                      style: BorderStyle.solid,
-                    ),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Center(
-                    child: Icon(Icons.add, color: AppTheme.textMuted, size: 24),
-                  ),
-                ),
-              ),
+  Widget _statRow(String label, String value, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.bgCard,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppTheme.borderColor),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(color: AppTheme.textMuted)),
+          Text(
+            value,
+            style: TextStyle(
+              color: color,
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
             ),
           ),
         ],
@@ -463,70 +336,126 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen>
     );
   }
 
-  Widget _buildMiniDate(
-    String day,
-    String date,
-    bool isActive,
-    Color themeColor,
-  ) {
-    return Column(
+  Widget _buildNotesTab(List<DailyLog> logs, Color themeColor) {
+    final currentLog = logs
+        .where((l) => l.date.isAtSameMomentAs(_selectedDate))
+        .firstOrNull;
+    final noteController = TextEditingController(text: currentLog?.note ?? '');
+
+    return ListView(
       children: [
-        Text(
-          day,
-          style: const TextStyle(color: AppTheme.textMuted, fontSize: 12),
-        ),
-        const SizedBox(height: 4),
-        Container(
-          width: 36,
-          height: 36,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: isActive ? themeColor : Colors.transparent,
-            borderRadius: BorderRadius.circular(8),
+        // Simple horizontal week picker
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: List.generate(7, (index) {
+              final d = DateTime.now().subtract(Duration(days: 6 - index));
+              final normalized = DateTime(d.year, d.month, d.day);
+              final isSelected = normalized.isAtSameMomentAs(_selectedDate);
+              return GestureDetector(
+                onTap: () => setState(() => _selectedDate = normalized),
+                child: Container(
+                  margin: const EdgeInsets.only(right: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isSelected ? themeColor : AppTheme.bgCard,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppTheme.borderColor),
+                  ),
+                  child: Column(
+                    children: [
+                      Text(
+                        DateFormat('E').format(d),
+                        style: TextStyle(
+                          color: isSelected ? Colors.black : AppTheme.textMuted,
+                          fontSize: 12,
+                        ),
+                      ),
+                      Text(
+                        DateFormat('d').format(d),
+                        style: TextStyle(
+                          color: isSelected ? Colors.black : AppTheme.textMain,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }),
           ),
-          child: Text(
-            date,
-            style: TextStyle(
-              color: isActive ? Colors.black : AppTheme.borderColor,
-              fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+        ),
+        const SizedBox(height: 24),
+        Text(
+          DateFormat('MMMM d, yyyy').format(_selectedDate),
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+        ),
+        const SizedBox(height: 16),
+
+        TextField(
+          controller: noteController,
+          maxLines: 5,
+          style: const TextStyle(color: AppTheme.textMain),
+          decoration: InputDecoration(
+            hintText: 'Add a note for this day...',
+            fillColor: AppTheme.bgCard,
+            filled: true,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
             ),
           ),
+          onChanged: (val) {
+            final newLog =
+                (currentLog ??
+                        DailyLog(
+                          habitId: widget.habit.id,
+                          date: _selectedDate,
+                          isCompleted: false,
+                        ))
+                    .copyWith(note: val);
+            ref.read(logProvider.notifier).saveLog(newLog);
+          },
+        ),
+        const SizedBox(height: 24),
+        const Text('Daily Mood', style: TextStyle(fontWeight: FontWeight.w500)),
+        const SizedBox(height: 12),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: ['😄', '🙂', '😐', '🙁', '😩'].map((emoji) {
+            final isSelected = currentLog?.mood == emoji;
+            return GestureDetector(
+              onTap: () {
+                final newLog =
+                    (currentLog ??
+                            DailyLog(
+                              habitId: widget.habit.id,
+                              date: _selectedDate,
+                              isCompleted: false,
+                            ))
+                        .copyWith(mood: emoji);
+                ref.read(logProvider.notifier).saveLog(newLog);
+              },
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? themeColor.withOpacity(0.2)
+                      : AppTheme.bgCard,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: isSelected ? themeColor : AppTheme.borderColor,
+                  ),
+                ),
+                child: Text(emoji, style: const TextStyle(fontSize: 20)),
+              ),
+            );
+          }).toList(),
         ),
       ],
-    );
-  }
-
-  Widget _buildMoodEmoji(
-    String emoji,
-    String text,
-    bool isSelected,
-    Color themeColor,
-  ) {
-    return Expanded(
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 4),
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        decoration: BoxDecoration(
-          color: isSelected ? themeColor.withOpacity(0.2) : AppTheme.bgInput,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isSelected ? themeColor : AppTheme.borderColor,
-          ),
-        ),
-        child: Column(
-          children: [
-            Text(emoji, style: const TextStyle(fontSize: 24)),
-            const SizedBox(height: 6),
-            Text(
-              text,
-              style: TextStyle(
-                color: isSelected ? themeColor : AppTheme.textMuted,
-                fontSize: 12,
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
