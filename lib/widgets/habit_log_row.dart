@@ -54,28 +54,11 @@ class HabitLogRow extends StatelessWidget {
   }
 
   Color _getCellColor(DailyLog? log) {
-    if (log == null) return Colors.white.withOpacity(0.05);
-
-    if (log.score > 0) {
-      final intensity = log.score / 5.0;
-      return habit.positiveColor.withOpacity(0.2 + (0.8 * intensity));
-    } else {
-      final intensity = log.score.abs() / 5.0;
-      return habit.negativeColor.withOpacity(0.2 + (0.8 * intensity));
-    }
+    if (log == null || !log.isCompleted) return Colors.white.withOpacity(0.05);
+    return habit.color;
   }
 
   Widget? _buildScoreText(DailyLog? log) {
-    if (log == null) return null;
-    return Center(
-      child: Text(
-        log.score > 0 ? '+${log.score}' : '${log.score}',
-        style: TextStyle(
-          color: Colors.white,
-          fontSize: 10,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-    );
+    return null;
   }
 }
