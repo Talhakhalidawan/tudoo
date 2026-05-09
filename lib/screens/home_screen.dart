@@ -244,6 +244,8 @@ class HomeScreen extends ConsumerWidget {
                   if (habit.icon == 'workout')
                     hIcon = Icons.directions_run_rounded;
                   if (habit.icon == 'water') hIcon = Icons.water_drop_rounded;
+                  if (habit.icon == 'meditate') hIcon = Icons.spa_rounded;
+                  if (habit.icon == 'study') hIcon = Icons.school_rounded;
 
                   return GestureDetector(
                     onTap: () {
