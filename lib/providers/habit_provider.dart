@@ -3,13 +3,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/habit.dart';
 
-final habitProvider = StateNotifierProvider<HabitNotifier, List<Habit>>((ref) {
+final habitProvider = NotifierProvider<HabitNotifier, List<Habit>>(() {
   return HabitNotifier();
 });
 
-class HabitNotifier extends StateNotifier<List<Habit>> {
-  HabitNotifier() : super([]) {
+class HabitNotifier extends Notifier<List<Habit>> {
+  @override
+  List<Habit> build() {
     _loadHabits();
+    return [];
   }
 
   static const _key = 'habits';

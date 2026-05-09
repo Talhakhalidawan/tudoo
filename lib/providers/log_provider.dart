@@ -3,13 +3,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/daily_log.dart';
 
-final logProvider = StateNotifierProvider<LogNotifier, List<DailyLog>>((ref) {
+final logProvider = NotifierProvider<LogNotifier, List<DailyLog>>(() {
   return LogNotifier();
 });
 
-class LogNotifier extends StateNotifier<List<DailyLog>> {
-  LogNotifier() : super([]) {
+class LogNotifier extends Notifier<List<DailyLog>> {
+  @override
+  List<DailyLog> build() {
     _loadLogs();
+    return [];
   }
 
   static const _key = 'daily_logs';
@@ -31,19 +33,12 @@ class LogNotifier extends StateNotifier<List<DailyLog>> {
 
   Future<void> logScore(String habitId, DateTime date, int score) async {
     final normalizedDate = DateTime(date.year, date.month, date.day);
+    
+    final newState = state.where((l) => 
+      !(l.habitId == habitId && l.date.isAtSameMomentAs(normalizedDate))
+    ).toList();
 
-    // Remove existing log for same habit and date
-    final newState = state
-        .where(
-          (l) =>
-              !(l.habitId == habitId &&
-                  l.date.isAtSameMomentAs(normalizedDate)),
-        )
-        .toList();
-
-    newState.add(
-      DailyLog(habitId: habitId, date: normalizedDate, score: score),
-    );
+    newState.add(DailyLog(habitId: habitId, date: normalizedDate, score: score));
     state = newState;
     await _saveLogs();
   }
