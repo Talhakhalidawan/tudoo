@@ -1,0 +1,1087 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Proomo - Habit Tracker</title>
+    <!-- Font Awesome for clean icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* === CSS VARIABLES & RESET === */
+        :root {
+            --bg-main: #0B0E14;
+            --bg-card: #15181F;
+            --bg-input: #1A1D24;
+            --text-main: #FFFFFF;
+            --text-muted: #8A8D93;
+            --theme-color: #34C759; /* Default Green */
+            --theme-color-glow: rgba(52, 199, 89, 0.2);
+            --border-color: #23272F;
+            --danger: #FF3B30;
+            --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            font-family: var(--font-family);
+            overflow: hidden; /* Prevent body scroll, handle in pages */
+            height: 100vh;
+            width: 100vw;
+        }
+
+        /* === LAYOUT & NAVIGATION === */
+        #app {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+
+        .page {
+            display: none;
+            height: 100%;
+            width: 100%;
+            overflow-y: auto;
+            padding: 20px 20px 100px 20px; /* Bottom padding for nav */
+            animation: fadeIn 0.3s ease;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Bottom Navigation */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 80px;
+            background: rgba(21, 24, 31, 0.95);
+            backdrop-filter: blur(10px);
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 1000;
+            padding-bottom: 15px; /* Safe area padding */
+        }
+
+        .nav-item {
+            color: var(--text-muted);
+            font-size: 20px;
+            text-decoration: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+        .nav-item.active {
+            color: var(--theme-color);
+        }
+
+        .nav-fab {
+            background: var(--theme-color);
+            color: #000;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            box-shadow: 0 4px 15px var(--theme-color-glow);
+            transform: translateY(-10px);
+            border: 4px solid var(--bg-main);
+            cursor: pointer;
+        }
+
+        /* === TYPOGRAPHY & UTILITIES === */
+        h1, h2, h3 { font-weight: 600; }
+        .text-muted { color: var(--text-muted); }
+        .text-theme { color: var(--theme-color); }
+        .d-flex { display: flex; }
+        .justify-between { justify-content: space-between; }
+        .align-center { align-items: center; }
+        .mb-1 { margin-bottom: 8px; }
+        .mb-2 { margin-bottom: 16px; }
+        .mb-3 { margin-bottom: 24px; }
+        
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-top: 20px;
+        }
+
+        .icon-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-main);
+            font-size: 20px;
+            cursor: pointer;
+        }
+
+        /* === COMPONENTS === */
+        /* Cards */
+        .card {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 16px;
+            border: 1px solid var(--border-color);
+            margin-bottom: 16px;
+        }
+
+        /* Progress Bar */
+        .progress-container {
+            width: 100%;
+            height: 8px;
+            background: var(--border-color);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 12px;
+        }
+        .progress-fill {
+            height: 100%;
+            background: var(--theme-color);
+            border-radius: 4px;
+        }
+
+        /* Heatmap */
+        .heatmap-container {
+            display: grid;
+            grid-template-columns: repeat(15, 1fr);
+            gap: 4px;
+            margin-top: 12px;
+        }
+        .heatmap-cell {
+            aspect-ratio: 1;
+            background: var(--border-color);
+            border-radius: 3px;
+        }
+
+        /* Habit List Items */
+        .habit-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px;
+            background: var(--bg-card);
+            border-radius: 16px;
+            margin-bottom: 12px;
+            border: 1px solid var(--border-color);
+        }
+        .habit-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .habit-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            background: var(--bg-input);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 18px;
+        }
+        .checkbox {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: 2px solid var(--border-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .checkbox.checked {
+            background: var(--theme-color);
+            border-color: var(--theme-color);
+            color: #000;
+        }
+        .checkbox.checked::after {
+            content: '\f00c';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            font-size: 12px;
+        }
+
+        /* Buttons */
+        .btn-primary {
+            width: 100%;
+            padding: 16px;
+            border-radius: 12px;
+            background: var(--theme-color);
+            color: #000;
+            border: none;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            text-align: center;
+        }
+
+        /* Circular Progress (Detail Page) */
+        .circle-progress-wrapper {
+            position: relative;
+            width: 150px;
+            height: 150px;
+            margin: 0 auto 20px auto;
+        }
+        .circle-progress-svg {
+            transform: rotate(-90deg);
+            width: 150px;
+            height: 150px;
+        }
+        .circle-bg {
+            fill: none;
+            stroke: var(--border-color);
+            stroke-width: 12;
+        }
+        .circle-fill {
+            fill: none;
+            stroke: var(--theme-color);
+            stroke-width: 12;
+            stroke-linecap: round;
+            stroke-dasharray: 440;
+            stroke-dashoffset: 80; /* Adjust for progress */
+        }
+        .circle-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+        .circle-text h2 { font-size: 36px; margin: 0; }
+        .circle-text span { font-size: 12px; color: var(--text-muted); }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 20px;
+        }
+        .tab {
+            flex: 1;
+            text-align: center;
+            padding: 12px 0;
+            color: var(--text-muted);
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+        }
+        .tab.active {
+            color: var(--theme-color);
+            border-bottom-color: var(--theme-color);
+        }
+
+        /* Inputs & Forms */
+        .input-group {
+            margin-bottom: 20px;
+        }
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+        .form-control {
+            width: 100%;
+            padding: 14px 16px;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            color: white;
+            font-size: 16px;
+            outline: none;
+        }
+        
+        .pill-group {
+            display: flex;
+            gap: 10px;
+        }
+        .pill {
+            flex: 1;
+            padding: 12px;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            text-align: center;
+            cursor: pointer;
+        }
+        .pill.active {
+            background: var(--theme-color-glow);
+            border-color: var(--theme-color);
+            color: var(--theme-color);
+        }
+
+        /* Settings Toggle */
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 30px;
+            background: var(--border-color);
+            border-radius: 15px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 26px;
+            height: 26px;
+            background: white;
+            border-radius: 50%;
+            transition: 0.3s;
+        }
+        .toggle-switch.active {
+            background: var(--theme-color);
+        }
+        .toggle-switch.active::after {
+            transform: translateX(20px);
+        }
+
+        /* Color Swatches */
+        .color-swatches {
+            display: flex;
+            gap: 12px;
+            margin-top: 10px;
+        }
+        .swatch {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+        .swatch.active { border-color: white; }
+
+        /* Mood Selector */
+        .mood-selector {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+        }
+        .mood-box {
+            flex: 1;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 12px 0;
+            text-align: center;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+        }
+        .mood-box.active {
+            background: var(--theme-color-glow);
+            border-color: var(--theme-color);
+        }
+        .mood-box span { font-size: 12px; color: var(--text-muted); }
+        .mood-box i { font-size: 24px; }
+
+        /* Calendar Full View */
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .cal-day-name {
+            color: var(--text-muted);
+            font-size: 12px;
+            margin-bottom: 10px;
+        }
+        .cal-date {
+            width: 36px;
+            height: 36px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: auto;
+            border-radius: 50%;
+            cursor: pointer;
+            background: var(--bg-input);
+        }
+        .cal-date.active {
+            background: var(--theme-color);
+            color: #000;
+            font-weight: bold;
+        }
+        .cal-date.dimmed { color: var(--border-color); background: transparent;}
+
+        /* Theme Cards */
+        .theme-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .theme-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 12px;
+            cursor: pointer;
+            text-align: center;
+        }
+        .theme-card.active {
+            border-color: var(--theme-color);
+            background: var(--theme-color-glow);
+        }
+        .theme-preview-dots {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2px;
+            justify-content: center;
+            margin-bottom: 8px;
+        }
+        .theme-dot {
+            width: 8px; height: 8px; border-radius: 2px;
+        }
+
+        /* List Items (Settings) */
+        .list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .list-item:last-child { border-bottom: none; }
+    </style>
+</head>
+<body>
+
+<div id="app">
+
+    <!-- ========================================== -->
+    <!-- PAGE 1: HOME DASHBOARD                     -->
+    <!-- ========================================== -->
+    <div id="page-home" class="page active">
+        <div class="header-top">
+            <div>
+                <p class="text-muted mb-1">Good evening,</p>
+                <h2>Abdullah 👋</h2>
+            </div>
+            <div class="d-flex align-center" style="background: rgba(255, 149, 0, 0.1); padding: 8px 12px; border-radius: 20px;">
+                <span style="color: #FF9500; font-weight: bold; margin-right: 4px;">🔥 27</span>
+                <span class="text-muted" style="font-size: 12px;">Day Streak</span>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="d-flex justify-between mb-1">
+                <span class="text-muted">This Week Progress</span>
+                <span class="text-muted">Completed <span class="text-main">16 / 21</span></span>
+            </div>
+            <h3>76%</h3>
+            <div class="progress-container">
+                <div class="progress-fill" style="width: 76%;"></div>
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <div class="d-flex justify-between align-center mb-2">
+                <h4>May 2024</h4>
+                <div class="text-muted" style="font-size: 14px;">
+                    <i class="fa-solid fa-chevron-left mr-2"></i>
+                    <span style="margin: 0 10px;">Sort</span>
+                    <i class="fa-solid fa-chevron-right"></i>
+                </div>
+            </div>
+            <!-- Heatmap labels -->
+            <div class="d-flex justify-between text-muted mb-1" style="font-size: 12px;">
+                <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+            </div>
+            <div class="heatmap-container" id="home-heatmap">
+                <!-- Injected via JS -->
+            </div>
+        </div>
+
+        <div class="d-flex justify-between align-center mb-2">
+            <h4>Your Habits</h4>
+            <span class="text-theme" style="font-size: 14px; cursor: pointer;">See All</span>
+        </div>
+
+        <div class="habit-list">
+            <div class="habit-item" onclick="navigateTo('page-detail')">
+                <div class="habit-info">
+                    <div class="habit-icon">📚</div>
+                    <div>
+                        <div style="font-weight: 600;">Study</div>
+                        <div class="text-muted" style="font-size: 12px;">27 day streak</div>
+                    </div>
+                </div>
+                <div class="checkbox checked" onclick="event.stopPropagation(); toggleCheck(this)"></div>
+            </div>
+            
+            <div class="habit-item" onclick="navigateTo('page-detail')">
+                <div class="habit-info">
+                    <div class="habit-icon">🏃</div>
+                    <div>
+                        <div style="font-weight: 600;">Workout</div>
+                        <div class="text-muted" style="font-size: 12px;">3 day streak</div>
+                    </div>
+                </div>
+                <div class="checkbox" onclick="event.stopPropagation(); toggleCheck(this)"></div>
+            </div>
+
+            <div class="habit-item" onclick="navigateTo('page-detail')">
+                <div class="habit-info">
+                    <div class="habit-icon" style="color: #32ADE6;">💧</div>
+                    <div>
+                        <div style="font-weight: 600;">Drink Water</div>
+                        <div class="text-muted" style="font-size: 12px;">12 day streak</div>
+                    </div>
+                </div>
+                <div class="checkbox checked" onclick="event.stopPropagation(); toggleCheck(this)"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- PAGE 2: HABIT DETAIL (STUDY)               -->
+    <!-- ========================================== -->
+    <div id="page-detail" class="page">
+        <div class="header-top">
+            <button class="icon-btn" onclick="navigateTo('page-home')"><i class="fa-solid fa-arrow-left"></i></button>
+            <h3>📚 Study</h3>
+            <button class="icon-btn"><i class="fa-solid fa-list-ul"></i></button>
+        </div>
+
+        <div class="circle-progress-wrapper">
+            <svg class="circle-progress-svg">
+                <circle class="circle-bg" cx="75" cy="75" r="65"></circle>
+                <circle class="circle-fill" cx="75" cy="75" r="65"></circle>
+            </svg>
+            <div class="circle-text">
+                <h2>27</h2>
+                <span>Days</span>
+            </div>
+        </div>
+
+        <div class="text-center mb-3" style="text-align: center;">
+            <h4>Current Streak 🔥</h4>
+            <span class="text-muted" style="font-size: 14px;">Best Streak: 42 days</span>
+        </div>
+
+        <div class="tabs">
+            <div class="tab active">Calendar</div>
+            <div class="tab">Stats</div>
+            <div class="tab" onclick="navigateTo('page-notes')">Notes</div>
+        </div>
+
+        <div class="card">
+            <div class="d-flex justify-between align-center mb-2">
+                <h5>May 2024</h5>
+                <div class="text-muted" style="font-size: 14px;">
+                    <i class="fa-solid fa-chevron-left"></i>
+                    <span style="margin: 0 10px;">Sort</span>
+                    <i class="fa-solid fa-chevron-right"></i>
+                </div>
+            </div>
+             <div class="d-flex justify-between text-muted mb-1" style="font-size: 12px;">
+                <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+            </div>
+            <div class="heatmap-container" id="detail-heatmap">
+                <!-- Injected via JS -->
+            </div>
+            
+            <div class="d-flex justify-between align-center mt-3" style="border-top: 1px solid var(--border-color); padding-top: 16px;">
+                <span>Today</span>
+                <span class="text-theme"><i class="fa-solid fa-check-circle"></i> Completed</span>
+            </div>
+        </div>
+
+        <button class="btn-primary mt-2" style="background: transparent; border: 1px solid var(--theme-color); color: var(--theme-color);">Edit Habit</button>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- PAGE 3: ADD NEW HABIT                      -->
+    <!-- ========================================== -->
+    <!-- Note: Modal style, hiding bottom nav -->
+    <div id="page-add" class="page" style="padding-bottom: 20px;">
+        <div class="header-top">
+            <button class="icon-btn" onclick="navigateTo('page-home')"><i class="fa-solid fa-xmark"></i></button>
+            <h3>Add New Habit</h3>
+            <div style="width: 20px;"></div> <!-- Spacer -->
+        </div>
+
+        <div style="display: flex; flex-direction: column; align-items: center; margin-bottom: 24px;">
+            <div class="habit-icon" style="width: 80px; height: 80px; font-size: 40px; border-radius: 50%; background: var(--bg-card); border: 1px solid var(--border-color); margin-bottom: 12px;">
+                <i class="fa-regular fa-face-smile text-muted"></i>
+            </div>
+            <span class="text-muted">Choose Icon</span>
+        </div>
+
+        <div class="input-group">
+            <label>Habit Name</label>
+            <input type="text" class="form-control" placeholder="e.g. Read Book">
+        </div>
+
+        <div class="input-group">
+            <label>Frequency</label>
+            <div class="pill-group">
+                <div class="pill active">Daily</div>
+                <div class="pill">Weekly</div>
+                <div class="pill">Custom</div>
+            </div>
+        </div>
+
+        <div class="input-group">
+            <label>Goal</label>
+            <div class="form-control d-flex justify-between align-center">
+                <span>1x per day</span>
+                <div>
+                    <button class="icon-btn" style="background: var(--bg-card); padding: 4px 10px; border-radius: 6px;">-</button>
+                    <button class="icon-btn" style="background: var(--bg-card); padding: 4px 10px; border-radius: 6px; margin-left: 8px;">+</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="input-group">
+            <label>Choose Color</label>
+            <div class="color-swatches">
+                <div class="swatch active" style="background: #34C759;" onclick="selectSwatch(this)"></div>
+                <div class="swatch" style="background: #32ADE6;" onclick="selectSwatch(this)"></div>
+                <div class="swatch" style="background: #AF52DE;" onclick="selectSwatch(this)"></div>
+                <div class="swatch" style="background: #FF2D55;" onclick="selectSwatch(this)"></div>
+                <div class="swatch" style="background: #FF9500;" onclick="selectSwatch(this)"></div>
+                <div class="swatch" style="background: #A2845E;" onclick="selectSwatch(this)"></div>
+            </div>
+        </div>
+
+        <button class="btn-primary" style="margin-top: auto; position: absolute; bottom: 30px; width: calc(100% - 40px);">Create Habit</button>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- PAGE 4: NOTES                              -->
+    <!-- ========================================== -->
+    <div id="page-notes" class="page">
+        <div class="header-top">
+            <button class="icon-btn" onclick="navigateTo('page-detail')"><i class="fa-solid fa-arrow-left"></i></button>
+            <h3>Notes</h3>
+            <button class="icon-btn"><i class="fa-regular fa-calendar"></i></button>
+        </div>
+
+        <!-- Mini horizontal date picker -->
+        <div class="d-flex justify-between mb-3 text-center">
+            <div><div class="text-muted" style="font-size:12px">Mon</div><div class="cal-date dimmed">13</div></div>
+            <div><div class="text-muted" style="font-size:12px">Tue</div><div class="cal-date dimmed">14</div></div>
+            <div><div class="text-muted" style="font-size:12px">Wed</div><div class="cal-date active" style="border-radius: 8px;">15</div></div>
+            <div><div class="text-muted" style="font-size:12px">Thu</div><div class="cal-date dimmed">16</div></div>
+            <div><div class="text-muted" style="font-size:12px">Fri</div><div class="cal-date dimmed">17</div></div>
+        </div>
+
+        <p class="mb-2">May 15, 2024</p>
+        
+        <div class="card" style="position: relative;">
+            <p class="text-muted" style="line-height: 1.6;">Studied DSA for 2 hours. Solved problems on arrays and learned something new about sliding window.</p>
+            <i class="fa-solid fa-pen text-muted" style="position: absolute; right: 16px; top: 16px;"></i>
+        </div>
+
+        <div class="mb-3">
+            <p class="mb-2">How was your day?</p>
+            <div class="mood-selector">
+                <div class="mood-box active">
+                    <i>😄</i>
+                    <span class="text-theme">Great</span>
+                </div>
+                <div class="mood-box">
+                    <i>🙂</i>
+                    <span>Good</span>
+                </div>
+                <div class="mood-box">
+                    <i>😐</i>
+                    <span>Okay</span>
+                </div>
+                <div class="mood-box">
+                    <i>🙁</i>
+                    <span>Bad</span>
+                </div>
+                <div class="mood-box">
+                    <i>😩</i>
+                    <span>Terrible</span>
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <p class="mb-2">Photos / Attachments</p>
+            <div style="width: 80px; height: 80px; border: 1px dashed var(--text-muted); border-radius: 12px; display: flex; justify-content: center; align-items: center; cursor: pointer;">
+                <i class="fa-solid fa-plus text-muted" style="font-size: 24px;"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- PAGE 5: CALENDAR FULL VIEW                 -->
+    <!-- ========================================== -->
+    <div id="page-calendar" class="page">
+        <div class="header-top">
+            <button class="icon-btn" onclick="navigateTo('page-home')"><i class="fa-solid fa-arrow-left"></i></button>
+            <h3>Calendar</h3>
+            <button class="icon-btn"><i class="fa-regular fa-calendar-plus"></i></button>
+        </div>
+
+        <div class="d-flex justify-between align-center mb-3">
+            <i class="fa-solid fa-chevron-left text-muted"></i>
+            <h4>May 2024</h4>
+            <i class="fa-solid fa-chevron-right text-muted"></i>
+        </div>
+
+        <div class="calendar-grid">
+            <div class="cal-day-name">Mon</div><div class="cal-day-name">Tue</div><div class="cal-day-name">Wed</div><div class="cal-day-name">Thu</div><div class="cal-day-name">Fri</div><div class="cal-day-name">Sat</div><div class="cal-day-name">Sun</div>
+            
+            <div class="cal-date dimmed">29</div><div class="cal-date dimmed">30</div>
+            <div class="cal-date">1</div><div class="cal-date">2</div><div class="cal-date">3</div><div class="cal-date">4</div><div class="cal-date">5</div>
+            
+            <div class="cal-date">6</div><div class="cal-date">7</div><div class="cal-date">8</div><div class="cal-date">9</div><div class="cal-date">10</div><div class="cal-date">11</div><div class="cal-date">12</div>
+            
+            <div class="cal-date" style="background: var(--theme-color-glow); color: var(--theme-color);">13</div>
+            <div class="cal-date">14</div>
+            <div class="cal-date active">15</div> <!-- Selected -->
+            <div class="cal-date" style="background: var(--theme-color-glow); color: var(--theme-color);">16</div>
+            <div class="cal-date" style="background: var(--theme-color-glow); color: var(--theme-color);">17</div>
+            <div class="cal-date" style="background: var(--theme-color-glow); color: var(--theme-color);">18</div>
+            <div class="cal-date" style="background: var(--theme-color-glow); color: var(--theme-color);">19</div>
+            
+            <div class="cal-date" style="background: var(--theme-color-glow); color: var(--theme-color);">20</div>
+            <div class="cal-date" style="background: var(--theme-color-glow); color: var(--theme-color);">21</div>
+            <div class="cal-date">22</div><div class="cal-date">23</div><div class="cal-date">24</div><div class="cal-date">25</div><div class="cal-date">26</div>
+            
+            <div class="cal-date" style="background: var(--theme-color-glow); color: var(--theme-color);">27</div>
+            <div class="cal-date" style="background: var(--theme-color-glow); color: var(--theme-color);">28</div>
+            <div class="cal-date">29</div><div class="cal-date">30</div><div class="cal-date">31</div><div class="cal-date dimmed">1</div><div class="cal-date dimmed">2</div>
+        </div>
+
+        <p class="mb-2">May 15, 2024</p>
+        <div class="card" style="padding: 0;">
+            <div class="list-item" style="padding: 16px;">
+                <div class="d-flex align-center gap-2"><span style="margin-right:12px;">📚</span> Study</div>
+                <div class="checkbox checked"></div>
+            </div>
+            <div class="list-item" style="padding: 16px;">
+                <div class="d-flex align-center gap-2"><span style="margin-right:12px;">🏃</span> Workout</div>
+                <div class="checkbox checked"></div>
+            </div>
+            <div class="list-item" style="padding: 16px;">
+                <div class="d-flex align-center gap-2" style="color: #32ADE6;"><span style="margin-right:12px;">💧</span> Drink Water</div>
+                <div class="checkbox checked"></div>
+            </div>
+            <div class="list-item" style="padding: 16px;">
+                <div class="d-flex align-center gap-2" style="color: #FF9500;"><span style="margin-right:12px;">🧘</span> Meditate</div>
+                <div class="checkbox"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- PAGE 6: SETTINGS                           -->
+    <!-- ========================================== -->
+    <div id="page-settings" class="page">
+        <div class="header-top">
+            <h3 style="margin: 0 auto;">Settings</h3>
+        </div>
+
+        <h5 class="text-muted mb-2">Preferences</h5>
+        <div class="card" style="padding: 0 16px;">
+            <div class="list-item">
+                <div class="d-flex align-center"><i class="fa-regular fa-moon mr-2" style="margin-right:12px; width: 20px;"></i> Dark Mode</div>
+                <div class="toggle-switch active" onclick="this.classList.toggle('active')"></div>
+            </div>
+            <div class="list-item">
+                <div class="d-flex align-center"><i class="fa-regular fa-bell mr-2" style="margin-right:12px; width: 20px;"></i> Notifications</div>
+                <i class="fa-solid fa-chevron-right text-muted"></i>
+            </div>
+            <div class="list-item">
+                <div class="d-flex align-center"><i class="fa-solid fa-arrow-rotate-right mr-2" style="margin-right:12px; width: 20px;"></i> First Day of Week</div>
+                <div class="text-muted d-flex align-center">Monday <i class="fa-solid fa-chevron-right ml-2" style="margin-left:8px;"></i></div>
+            </div>
+            <div class="list-item">
+                <div class="d-flex align-center"><i class="fa-regular fa-calendar mr-2" style="margin-right:12px; width: 20px;"></i> Date Format</div>
+                <div class="text-muted d-flex align-center">May 15, 2024 <i class="fa-solid fa-chevron-right ml-2" style="margin-left:8px;"></i></div>
+            </div>
+        </div>
+
+        <h5 class="text-muted mb-2 mt-3">App</h5>
+        <div class="card" style="padding: 0 16px;">
+            <div class="list-item" onclick="navigateTo('page-theme')" style="cursor: pointer;">
+                <div class="d-flex align-center"><i class="fa-solid fa-palette mr-2" style="margin-right:12px; width: 20px;"></i> Theme Color</div>
+                <div style="width: 20px; height: 20px; border-radius: 50%; background: var(--theme-color);"></div>
+            </div>
+            <div class="list-item">
+                <div class="d-flex align-center"><i class="fa-solid fa-cloud-arrow-up mr-2" style="margin-right:12px; width: 20px;"></i> Backup & Sync</div>
+                <i class="fa-solid fa-chevron-right text-muted"></i>
+            </div>
+            <div class="list-item">
+                <div class="d-flex align-center"><i class="fa-solid fa-file-export mr-2" style="margin-right:12px; width: 20px;"></i> Export Data</div>
+                <i class="fa-solid fa-chevron-right text-muted"></i>
+            </div>
+            <div class="list-item">
+                <div class="d-flex align-center"><i class="fa-solid fa-circle-info mr-2" style="margin-right:12px; width: 20px;"></i> About Habit Tracker</div>
+                <div class="text-muted d-flex align-center">v1.0.0 <i class="fa-solid fa-chevron-right ml-2" style="margin-left:8px;"></i></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- PAGE 7: THEME SETTINGS                     -->
+    <!-- ========================================== -->
+    <div id="page-theme" class="page">
+        <div class="header-top">
+            <button class="icon-btn" onclick="navigateTo('page-settings')"><i class="fa-solid fa-arrow-left"></i></button>
+            <h3>Theme</h3>
+            <div style="width: 20px;"></div>
+        </div>
+
+        <p class="mb-2">Select Theme</p>
+        
+        <div class="theme-grid">
+            <div class="theme-card active" onclick="setTheme('#34C759', this)">
+                <div class="theme-preview-dots" style="color: #34C759;">
+                    <div class="theme-dot" style="background: rgba(52, 199, 89, 0.2)"></div>
+                    <div class="theme-dot" style="background: rgba(52, 199, 89, 0.6)"></div>
+                    <div class="theme-dot" style="background: #34C759"></div>
+                </div>
+                <div style="font-weight: 600; font-size: 14px;">Green</div>
+                <div class="text-muted" style="font-size: 10px;">(Default)</div>
+            </div>
+            <div class="theme-card" onclick="setTheme('#AF52DE', this)">
+                <div class="theme-preview-dots" style="color: #AF52DE;">
+                    <div class="theme-dot" style="background: rgba(175, 82, 222, 0.2)"></div>
+                    <div class="theme-dot" style="background: rgba(175, 82, 222, 0.6)"></div>
+                    <div class="theme-dot" style="background: #AF52DE"></div>
+                </div>
+                <div style="font-weight: 600; font-size: 14px; margin-top: 14px;">Purple</div>
+            </div>
+            <div class="theme-card" onclick="setTheme('#32ADE6', this)">
+                <div class="theme-preview-dots" style="color: #32ADE6;">
+                    <div class="theme-dot" style="background: rgba(50, 173, 230, 0.2)"></div>
+                    <div class="theme-dot" style="background: rgba(50, 173, 230, 0.6)"></div>
+                    <div class="theme-dot" style="background: #32ADE6"></div>
+                </div>
+                <div style="font-weight: 600; font-size: 14px; margin-top: 14px;">Blue</div>
+            </div>
+            <div class="theme-card" onclick="setTheme('#FF9500', this)">
+                <div class="theme-preview-dots" style="color: #FF9500;">
+                    <div class="theme-dot" style="background: rgba(255, 149, 0, 0.2)"></div>
+                    <div class="theme-dot" style="background: rgba(255, 149, 0, 0.6)"></div>
+                    <div class="theme-dot" style="background: #FF9500"></div>
+                </div>
+                <div style="font-weight: 600; font-size: 14px; margin-top: 14px;">Orange</div>
+            </div>
+            <div class="theme-card" onclick="setTheme('#FF2D55', this)">
+                <div class="theme-preview-dots" style="color: #FF2D55;">
+                    <div class="theme-dot" style="background: rgba(255, 45, 85, 0.2)"></div>
+                    <div class="theme-dot" style="background: rgba(255, 45, 85, 0.6)"></div>
+                    <div class="theme-dot" style="background: #FF2D55"></div>
+                </div>
+                <div style="font-weight: 600; font-size: 14px; margin-top: 14px;">Pink</div>
+            </div>
+            <div class="theme-card" onclick="setTheme('#30B0C7', this)">
+                <div class="theme-preview-dots" style="color: #30B0C7;">
+                    <div class="theme-dot" style="background: rgba(48, 176, 199, 0.2)"></div>
+                    <div class="theme-dot" style="background: rgba(48, 176, 199, 0.6)"></div>
+                    <div class="theme-dot" style="background: #30B0C7"></div>
+                </div>
+                <div style="font-weight: 600; font-size: 14px; margin-top: 14px;">Teal</div>
+            </div>
+        </div>
+
+        <p class="mb-2">Preview</p>
+        <div class="card" style="display:flex; justify-content:center;">
+             <div class="heatmap-container" id="theme-heatmap" style="gap: 6px;">
+                <!-- Injected via JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- BOTTOM NAVIGATION                          -->
+    <!-- ========================================== -->
+    <div class="bottom-nav" id="main-nav">
+        <a class="nav-item active" data-target="page-home" onclick="navigateTo('page-home')">
+            <i class="fa-solid fa-house"></i>
+        </a>
+        <a class="nav-item" data-target="page-calendar" onclick="navigateTo('page-calendar')">
+            <i class="fa-solid fa-chart-simple"></i>
+        </a>
+        <div class="nav-fab" onclick="navigateTo('page-add')">
+            <i class="fa-solid fa-plus"></i>
+        </div>
+        <a class="nav-item" data-target="page-detail" onclick="navigateTo('page-detail')">
+            <i class="fa-solid fa-fire"></i>
+        </a>
+        <a class="nav-item" data-target="page-settings" onclick="navigateTo('page-settings')">
+            <i class="fa-solid fa-gear"></i>
+        </a>
+    </div>
+
+</div>
+
+<!-- ========================================== -->
+<!-- JAVASCRIPT LOGIC                           -->
+<!-- ========================================== -->
+<script>
+    // Navigation Logic
+    function navigateTo(pageId) {
+        // Hide all pages
+        document.querySelectorAll('.page').forEach(page => {
+            page.classList.remove('active');
+        });
+        
+        // Show target page
+        document.getElementById(pageId).classList.add('active');
+        
+        // Manage Bottom Nav visibility and active state
+        const bottomNav = document.getElementById('main-nav');
+        if (pageId === 'page-add') {
+            bottomNav.style.display = 'none'; // Hide on add page like image 3
+        } else {
+            bottomNav.style.display = 'flex';
+            
+            // Update active icon
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            const targetNav = document.querySelector(`.nav-item[data-target="${pageId}"]`);
+            if (targetNav) targetNav.classList.add('active');
+        }
+    }
+
+    // Toggle Checkbox
+    function toggleCheck(element) {
+        element.classList.toggle('checked');
+    }
+
+    // Add Habit Color Swatch Selection
+    function selectSwatch(element) {
+        document.querySelectorAll('.swatch').forEach(s => s.classList.remove('active'));
+        element.classList.add('active');
+    }
+
+    // Theme Switching Logic
+    function setTheme(hexColor, element) {
+        // Update CSS Variables
+        document.documentElement.style.setProperty('--theme-color', hexColor);
+        
+        // Generate RGB for glow (basic conversion)
+        const hex = hexColor.replace('#', '');
+        const r = parseInt(hex.substring(0, 2), 16);
+        const g = parseInt(hex.substring(2, 4), 16);
+        const b = parseInt(hex.substring(4, 6), 16);
+        document.documentElement.style.setProperty('--theme-color-glow', `rgba(${r}, ${g}, ${b}, 0.2)`);
+
+        // Update active class on cards
+        document.querySelectorAll('.theme-card').forEach(card => card.classList.remove('active'));
+        element.classList.add('active');
+        
+        // Re-generate heatmaps to reflect new colors visually in standard boxes
+        generateHeatmaps();
+    }
+
+    // Heatmap Generator
+    function generateHeatmaps() {
+        const createGrid = (containerId, rows, cols, isLarge = false) => {
+            const container = document.getElementById(containerId);
+            if(!container) return;
+            container.innerHTML = ''; // Clear previous
+            
+            const totalCells = rows * cols;
+            
+            for (let i = 0; i < totalCells; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'heatmap-cell';
+                
+                // Randomly assign intensities to simulate habit data
+                const random = Math.random();
+                if (random > 0.8) {
+                    cell.style.background = 'var(--theme-color)';
+                } else if (random > 0.5) {
+                    cell.style.background = 'var(--theme-color-glow)';
+                    cell.style.opacity = '0.7';
+                } else if (random > 0.3) {
+                    cell.style.background = 'var(--theme-color-glow)';
+                }
+                // leave others as default border-color
+
+                if (isLarge) {
+                    cell.style.width = '14px';
+                    cell.style.height = '14px';
+                    cell.style.borderRadius = '4px';
+                }
+
+                container.appendChild(cell);
+            }
+        };
+
+        // 7 rows (days) x 15 columns (weeks approx for view)
+        createGrid('home-heatmap', 7, 15);
+        createGrid('detail-heatmap', 7, 15);
+        
+        // Larger preview grid for theme page
+        const themeHeatmap = document.getElementById('theme-heatmap');
+        if(themeHeatmap) {
+            themeHeatmap.style.gridTemplateColumns = 'repeat(15, 1fr)';
+            createGrid('theme-heatmap', 4, 15, true); 
+        }
+    }
+
+    // Initialize logic on load
+    document.addEventListener('DOMContentLoaded', () => {
+        generateHeatmaps();
+
+        // Mood selector logic
+        document.querySelectorAll('.mood-box').forEach(box => {
+            box.addEventListener('click', function() {
+                document.querySelectorAll('.mood-box').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+
+        // Pill selector logic
+        document.querySelectorAll('.pill').forEach(pill => {
+            pill.addEventListener('click', function() {
+                document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+        
+        // Detail page tabs
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                if(this.innerText !== "Notes") { // Notes navigates away
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+                }
+            });
+        });
+    });
+
+</script>
+</body>
+</html>
