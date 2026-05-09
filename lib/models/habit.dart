@@ -5,22 +5,38 @@ import 'package:uuid/uuid.dart';
 class Habit {
   final String id;
   final String name;
-  final Color positiveColor;
-  final Color negativeColor;
+  final String icon;
+  final Color color;
+  final String frequency; // 'Daily', 'Weekly', 'Custom'
+  final int targetValue;
+  final DateTime createdAt;
 
   Habit({
     String? id,
     required this.name,
-    required this.positiveColor,
-    required this.negativeColor,
-  }) : id = id ?? const Uuid().v4();
+    required this.icon,
+    required this.color,
+    this.frequency = 'Daily',
+    this.targetValue = 1,
+    DateTime? createdAt,
+  }) : id = id ?? const Uuid().v4(),
+       createdAt = createdAt ?? DateTime.now();
 
-  Habit copyWith({String? name, Color? positiveColor, Color? negativeColor}) {
+  Habit copyWith({
+    String? name,
+    String? icon,
+    Color? color,
+    String? frequency,
+    int? targetValue,
+  }) {
     return Habit(
-      id: this.id,
+      id: id,
       name: name ?? this.name,
-      positiveColor: positiveColor ?? this.positiveColor,
-      negativeColor: negativeColor ?? this.negativeColor,
+      icon: icon ?? this.icon,
+      color: color ?? this.color,
+      frequency: frequency ?? this.frequency,
+      targetValue: targetValue ?? this.targetValue,
+      createdAt: createdAt,
     );
   }
 
@@ -28,8 +44,11 @@ class Habit {
     return {
       'id': id,
       'name': name,
-      'positiveColor': positiveColor.value,
-      'negativeColor': negativeColor.value,
+      'icon': icon,
+      'color': color.value,
+      'frequency': frequency,
+      'targetValue': targetValue,
+      'createdAt': createdAt.millisecondsSinceEpoch,
     };
   }
 
@@ -37,12 +56,16 @@ class Habit {
     return Habit(
       id: map['id'],
       name: map['name'],
-      positiveColor: Color(map['positiveColor']),
-      negativeColor: Color(map['negativeColor']),
+      icon: map['icon'] ?? 'book',
+      color: map['color'] != null ? Color(map['color']) : Colors.greenAccent,
+      frequency: map['frequency'] ?? 'Daily',
+      targetValue: map['targetValue'] ?? 1,
+      createdAt: map['createdAt'] != null
+          ? DateTime.fromMillisecondsSinceEpoch(map['createdAt'])
+          : DateTime.now(),
     );
   }
 
   String toJson() => json.encode(toMap());
-
   factory Habit.fromJson(String source) => Habit.fromMap(json.decode(source));
 }

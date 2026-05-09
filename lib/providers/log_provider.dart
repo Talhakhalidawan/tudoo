@@ -31,22 +31,35 @@ class LogNotifier extends Notifier<List<DailyLog>> {
     await prefs.setString(_key, data);
   }
 
-  Future<void> logScore(String habitId, DateTime date, int score) async {
-    final normalizedDate = DateTime(date.year, date.month, date.day);
+  Future<void> saveLog(DailyLog log) async {
+    final normalizedDate = DateTime(
+      log.date.year,
+      log.date.month,
+      log.date.day,
+    );
 
     final newState = state
         .where(
           (l) =>
-              !(l.habitId == habitId &&
+              !(l.habitId == log.habitId &&
                   l.date.isAtSameMomentAs(normalizedDate)),
         )
         .toList();
 
-    newState.add(
-      DailyLog(habitId: habitId, date: normalizedDate, score: score),
-    );
+    newState.add(log);
     state = newState;
     await _saveLogs();
+  }
+
+  DailyLog? getLogForDate(String habitId, DateTime date) {
+    final normalizedDate = DateTime(date.year, date.month, date.day);
+    try {
+      return state.firstWhere(
+        (l) => l.habitId == habitId && l.date.isAtSameMomentAs(normalizedDate),
+      );
+    } catch (_) {
+      return null;
+    }
   }
 
   List<DailyLog> getLogsForHabit(String habitId) {
