@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'home_screen.dart';
 import 'add_habit_screen.dart';
+import '../theme.dart';
 
 class RootScreen extends StatefulWidget {
   const RootScreen({super.key});
@@ -14,71 +15,112 @@ class _RootScreenState extends State<RootScreen> {
 
   final List<Widget> _screens = [
     const HomeScreen(),
-    const Center(child: Text('Calendar Placeholder')), // Placeholder for later
-    const SizedBox.shrink(), // Center placeholder for FAB
-    const Center(child: Text('Stats Placeholder')),
+    const Center(child: Text('Calendar Placeholder')),
+    const Center(child: Text('Detail Placeholder')),
     const Center(child: Text('Settings Placeholder')),
   ];
 
+  void _onItemTapped(int index) {
+    setState(() {
+      _currentIndex = index;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Determine the active color from the theme
+    final themeColor = Theme.of(context).primaryColor;
+
     return Scaffold(
-      body: _screens[_currentIndex],
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const AddHabitScreen()),
-          );
-        },
-        backgroundColor: Colors.greenAccent,
-        foregroundColor: Colors.black,
-        shape: const CircleBorder(),
-        child: const Icon(Icons.add, size: 28),
+      body: Stack(
+        children: [
+          // Main Body Content
+          Positioned.fill(child: _screens[_currentIndex]),
+
+          // Custom Bottom Navigation Bar
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: Container(
+              height: 80,
+              padding: const EdgeInsets.only(
+                bottom: 15,
+              ), // Safe area padding simulation
+              decoration: BoxDecoration(
+                color: AppTheme.bgCard.withOpacity(0.95),
+                border: const Border(
+                  top: BorderSide(color: AppTheme.borderColor),
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  _buildNavItem(0, Icons.home_rounded),
+                  _buildNavItem(1, Icons.bar_chart_rounded),
+
+                  // Center FAB
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const AddHabitScreen(),
+                        ),
+                      );
+                    },
+                    child: Transform.translate(
+                      offset: const Offset(0, -10),
+                      child: Container(
+                        width: 50,
+                        height: 50,
+                        decoration: BoxDecoration(
+                          color: themeColor,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: AppTheme.bgMain, width: 4),
+                          boxShadow: [
+                            BoxShadow(
+                              color: themeColor.withOpacity(0.2),
+                              blurRadius: 15,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.add,
+                          color: Colors.black,
+                          size: 24,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  _buildNavItem(2, Icons.local_fire_department_rounded),
+                  _buildNavItem(3, Icons.settings_rounded),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
-      bottomNavigationBar: Theme(
-        data: Theme.of(context).copyWith(
-          splashColor: Colors.transparent,
-          highlightColor: Colors.transparent,
-        ),
-        child: BottomNavigationBar(
-          currentIndex: _currentIndex == 2
-              ? 0
-              : _currentIndex, // Avoid selecting the center
-          onTap: (index) {
-            if (index == 2) return; // Ignore the middle empty space
-            setState(() => _currentIndex = index);
-          },
-          backgroundColor: const Color(0xFF1A1A1A),
-          type: BottomNavigationBarType.fixed,
-          showSelectedLabels: false,
-          showUnselectedLabels: false,
-          selectedItemColor: Colors.greenAccent,
-          unselectedItemColor: Colors.grey.shade600,
-          elevation: 0,
-          items: const [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.home_filled),
-              label: 'Home',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.bar_chart_rounded),
-              label: 'Stats',
-            ),
-            BottomNavigationBarItem(
-              icon: SizedBox(width: 48),
-              label: '',
-            ), // Invisible placeholder
-            BottomNavigationBarItem(
-              icon: Icon(Icons.local_fire_department_rounded),
-              label: 'Streaks',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.settings_rounded),
-              label: 'Settings',
-            ),
-          ],
+    );
+  }
+
+  Widget _buildNavItem(int index, IconData icon) {
+    final bool isActive = _currentIndex == index;
+    final themeColor = Theme.of(context).primaryColor;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => _onItemTapped(index),
+      child: Container(
+        width: 50,
+        height: 50,
+        alignment: Alignment.center,
+        child: Icon(
+          icon,
+          size: 24,
+          color: isActive ? themeColor : AppTheme.textMuted,
         ),
       ),
     );

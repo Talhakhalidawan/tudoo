@@ -2,55 +2,70 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
-  static const Color background = Color(0xFF000000);
-  static const Color surface = Color(0xFF121212);
-  static const Color accent = Color(0xFFFFFFFF);
-  static const Color secondaryText = Color(0xFF888888);
+  // CSS Variables mapped
+  static const Color bgMain = Color(0xFF0B0E14);
+  static const Color bgCard = Color(0xFF15181F);
+  static const Color bgInput = Color(0xFF1A1D24);
+  static const Color textMain = Color(0xFFFFFFFF);
+  static const Color textMuted = Color(0xFF8A8D93);
+  static const Color themeGreen = Color(0xFF34C759);
+  static const Color borderColor = Color(0xFF23272F);
+  static const Color danger = Color(0xFFFF3B30);
 
-  static ThemeData darkTheme = ThemeData(
+  // Global Theme config
+  static ThemeData get darkTheme => ThemeData(
     brightness: Brightness.dark,
-    scaffoldBackgroundColor: background,
-    primaryColor: accent,
+    scaffoldBackgroundColor: bgMain,
+    primaryColor: themeGreen,
     colorScheme: const ColorScheme.dark(
-      primary: accent,
-      surface: surface,
-      onSurface: accent,
+      primary: themeGreen,
+      surface: bgMain,
+      onSurface: textMain,
+      error: danger,
     ),
     textTheme: GoogleFonts.interTextTheme().apply(
-      bodyColor: accent,
-      displayColor: accent,
+      bodyColor: textMain,
+      displayColor: textMain,
     ),
     appBarTheme: const AppBarTheme(
-      backgroundColor: background,
+      backgroundColor: bgMain,
       elevation: 0,
       centerTitle: true,
+      iconTheme: IconThemeData(color: textMain),
+      titleTextStyle: TextStyle(
+        color: textMain,
+        fontSize: 18,
+        fontWeight: FontWeight.w600,
+      ),
     ),
     cardTheme: CardThemeData(
-      color: surface,
+      color: bgCard,
       elevation: 0,
+      margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: accent.withOpacity(0.1)),
+        borderRadius: BorderRadius.circular(16),
+        side: const BorderSide(color: borderColor),
       ),
     ),
     floatingActionButtonTheme: const FloatingActionButtonThemeData(
-      backgroundColor: accent,
-      foregroundColor: background,
+      backgroundColor: themeGreen,
+      foregroundColor: Colors.black,
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: surface,
+      fillColor: bgInput,
+      hintStyle: const TextStyle(color: textMuted),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide.none,
+        borderSide: const BorderSide(color: borderColor),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: accent.withOpacity(0.1)),
+        borderSide: const BorderSide(color: borderColor),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: accent),
+        borderSide: const BorderSide(color: themeGreen),
       ),
     ),
   );
