@@ -5,8 +5,8 @@ import '../providers/habit_provider.dart';
 import '../providers/log_provider.dart';
 import '../providers/streak_provider.dart';
 import '../widgets/habit_log_row.dart';
-import '../widgets/log_input_sheet.dart';
 import '../models/daily_log.dart';
+import 'habit_detail_screen.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -245,96 +245,110 @@ class HomeScreen extends ConsumerWidget {
                     hIcon = Icons.directions_run_rounded;
                   if (habit.icon == 'water') hIcon = Icons.water_drop_rounded;
 
-                  return Container(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF1E1E1E),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.white.withOpacity(0.05)),
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: habit.color.withOpacity(0.1),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(hIcon, color: habit.color, size: 24),
+                  return GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => HabitDetailScreen(habit: habit),
                         ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                habit.name,
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                '${streakData.currentStreak} day streak',
-                                style: TextStyle(
-                                  color: Colors.grey.shade500,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ],
-                          ),
+                      );
+                    },
+                    child: Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF1E1E1E),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.05),
                         ),
-                        GestureDetector(
-                          onTap: () {
-                            // Toggle completion
-                            final log = ref
-                                .read(logProvider.notifier)
-                                .getLogForDate(habit.id, DateTime.now());
-                            if (log != null) {
-                              ref
-                                  .read(logProvider.notifier)
-                                  .saveLog(
-                                    log.copyWith(isCompleted: !log.isCompleted),
-                                  );
-                            } else {
-                              ref
-                                  .read(logProvider.notifier)
-                                  .saveLog(
-                                    DailyLog(
-                                      habitId: habit.id,
-                                      date: DateTime.now(),
-                                      isCompleted: true,
-                                    ),
-                                  );
-                            }
-                          },
-                          child: Container(
-                            width: 32,
-                            height: 32,
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
+                              color: habit.color.withOpacity(0.1),
                               shape: BoxShape.circle,
-                              color: isCompletedToday
-                                  ? Colors.greenAccent
-                                  : Colors.transparent,
-                              border: Border.all(
+                            ),
+                            child: Icon(hIcon, color: habit.color, size: 24),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  habit.name,
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  '${streakData.currentStreak} day streak',
+                                  style: TextStyle(
+                                    color: Colors.grey.shade500,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          GestureDetector(
+                            onTap: () {
+                              // Toggle completion
+                              final log = ref
+                                  .read(logProvider.notifier)
+                                  .getLogForDate(habit.id, DateTime.now());
+                              if (log != null) {
+                                ref
+                                    .read(logProvider.notifier)
+                                    .saveLog(
+                                      log.copyWith(
+                                        isCompleted: !log.isCompleted,
+                                      ),
+                                    );
+                              } else {
+                                ref
+                                    .read(logProvider.notifier)
+                                    .saveLog(
+                                      DailyLog(
+                                        habitId: habit.id,
+                                        date: DateTime.now(),
+                                        isCompleted: true,
+                                      ),
+                                    );
+                              }
+                            },
+                            child: Container(
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
                                 color: isCompletedToday
                                     ? Colors.greenAccent
-                                    : Colors.grey.shade700,
-                                width: 2,
+                                    : Colors.transparent,
+                                border: Border.all(
+                                  color: isCompletedToday
+                                      ? Colors.greenAccent
+                                      : Colors.grey.shade700,
+                                  width: 2,
+                                ),
                               ),
+                              child: isCompletedToday
+                                  ? const Icon(
+                                      Icons.check,
+                                      color: Colors.black,
+                                      size: 20,
+                                    )
+                                  : null,
                             ),
-                            child: isCompletedToday
-                                ? const Icon(
-                                    Icons.check,
-                                    color: Colors.black,
-                                    size: 20,
-                                  )
-                                : null,
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   );
                 }),
