@@ -31,8 +31,21 @@ class HabitNotifier extends Notifier<List<Habit>> {
     await prefs.setString(_key, data);
   }
 
-  Future<void> addHabit(Habit habit) async {
-    state = [...state, habit];
+  Future<void> addHabit({
+    required String name,
+    required String icon,
+    required Color color,
+    required String frequency,
+    required int targetValue,
+  }) async {
+    final newHabit = Habit(
+      name: name,
+      icon: icon,
+      color: color,
+      frequency: frequency,
+      targetValue: targetValue,
+    );
+    state = [...state, newHabit];
     await _saveHabits();
   }
 
