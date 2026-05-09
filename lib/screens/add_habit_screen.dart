@@ -78,23 +78,57 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
             Center(
               child: Column(
                 children: [
-                  Container(
-                    width: 100,
-                    height: 100,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.white.withOpacity(0.05),
-                      border: Border.all(color: Colors.white.withOpacity(0.1)),
-                    ),
-                    child: Icon(
-                      _selectedIcon == 'book'
-                          ? Icons.book
-                          : _selectedIcon == 'workout'
-                          ? Icons.directions_run
-                          : Icons.water_drop,
-                      size: 40,
-                      color: Colors.grey.shade400,
-                    ),
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    children: ['book', 'workout', 'water', 'meditate', 'study']
+                        .map((iconKey) {
+                          final isSelected = _selectedIcon == iconKey;
+                          IconData iconData;
+                          switch (iconKey) {
+                            case 'workout':
+                              iconData = Icons.directions_run;
+                              break;
+                            case 'water':
+                              iconData = Icons.water_drop;
+                              break;
+                            case 'meditate':
+                              iconData = Icons.spa;
+                              break;
+                            case 'study':
+                              iconData = Icons.school;
+                              break;
+                            default:
+                              iconData = Icons.book;
+                          }
+
+                          return GestureDetector(
+                            onTap: () =>
+                                setState(() => _selectedIcon = iconKey),
+                            child: Container(
+                              width: 60,
+                              height: 60,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: isSelected
+                                    ? Colors.greenAccent.withOpacity(0.2)
+                                    : Colors.white.withOpacity(0.05),
+                                border: Border.all(
+                                  color: isSelected
+                                      ? Colors.greenAccent
+                                      : Colors.white.withOpacity(0.1),
+                                ),
+                              ),
+                              child: Icon(
+                                iconData,
+                                color: isSelected
+                                    ? Colors.greenAccent
+                                    : Colors.grey.shade400,
+                              ),
+                            ),
+                          );
+                        })
+                        .toList(),
                   ),
                   const SizedBox(height: 12),
                   Text(
