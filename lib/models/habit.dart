@@ -15,11 +15,7 @@ class Habit {
     required this.negativeColor,
   }) : id = id ?? const Uuid().v4();
 
-  Habit copyWith({
-    String? name,
-    Color? positiveColor,
-    Color? negativeColor,
-  }) {
+  Habit copyWith({String? name, Color? positiveColor, Color? negativeColor}) {
     return Habit(
       id: this.id,
       name: name ?? this.name,
