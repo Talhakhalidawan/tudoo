@@ -1,17 +1,19 @@
-# tudoo
+# Tudoo - Pixel-Perfect Habit Tracker
 
-A new Flutter project.
+Tudoo is a premium, high-fidelity habit tracking application built with Flutter.
 
-## Getting Started
+## 🚀 The Vibe Coding Experiment
+This app is a project to test **vibe coding** an Android application—moving from concept to a polished, functional, and premium-looking product without a rigid initial plan, iterating purely on design references and user feedback.
 
-This project is a starting point for a Flutter application.
+## ✨ Features
+- **Pixel-Perfect UI**: Directly rebuilt from high-end web design references.
+- **Functional Heatmaps**: Real-time adherence tracking across all habits.
+- **Detailed Analytics**: Deep dive into habit performance with completion rates and streaks.
+- **Mood & Notes**: Log your feelings and daily thoughts alongside your habits.
+- **Dark Theme**: Sleek, high-contrast dark mode as the default experience.
 
-A few resources to get you started if this is your first Flutter project:
+## 📥 Download
+You can download the latest APK builds from the **[Releases Page](https://github.com/Talhakhalidawan/tudoo/releases)**.
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## 📄 License
+This project is free for public use and modification. See the [LICENSE](LICENSE) file for details.
