@@ -5,6 +5,7 @@ import '../models/habit.dart';
 import '../models/daily_log.dart';
 import '../providers/streak_provider.dart';
 import '../providers/log_provider.dart';
+import '../providers/habit_provider.dart';
 import '../theme.dart';
 import 'add_habit_screen.dart';
 
