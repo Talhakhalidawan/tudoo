@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/habit_provider.dart';
 import '../providers/log_provider.dart';
-import '../widgets/heatmap_grid.dart';
+import '../widgets/habit_log_row.dart';
 import '../widgets/log_input_sheet.dart';
 import 'add_habit_screen.dart';
 
@@ -73,7 +73,7 @@ class HomeScreen extends ConsumerWidget {
                           ],
                         ),
                         const SizedBox(height: 12),
-                        HeatmapGrid(habit: habit, logs: habitLogs),
+                        HabitLogRow(habit: habit, logs: habitLogs),
                       ],
                     ),
                   ),
