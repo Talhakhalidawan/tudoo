@@ -1,23 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/habit_provider.dart';
+import '../models/habit.dart';
 import '../theme.dart';
 
 class AddHabitScreen extends ConsumerStatefulWidget {
-  const AddHabitScreen({super.key});
+  final Habit? habit;
+  const AddHabitScreen({super.key, this.habit});
 
   @override
   ConsumerState<AddHabitScreen> createState() => _AddHabitScreenState();
 }
 
 class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
-  final _nameController = TextEditingController();
+  late TextEditingController _nameController;
+  late String _selectedFrequency;
+  late int _targetGoal;
+  late String _selectedIcon;
+  late Color _selectedColor;
 
-  String _selectedFrequency = 'Daily';
-  int _targetGoal = 1;
-  String _selectedIcon = 'book';
-
-  // Exact palette from HTML
   final List<Color> _palette = const [
     Color(0xFF34C759),
     Color(0xFF32ADE6),
@@ -26,33 +27,49 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
     Color(0xFFFF9500),
     Color(0xFFA2845E),
   ];
-  late Color _selectedColor;
 
   @override
   void initState() {
     super.initState();
-    _selectedColor = _palette.first;
+    _nameController = TextEditingController(text: widget.habit?.name ?? '');
+    _selectedFrequency = widget.habit?.frequency ?? 'Daily';
+    _targetGoal = widget.habit?.targetValue ?? 1;
+    _selectedIcon = widget.habit?.icon ?? 'book';
+    _selectedColor = widget.habit?.color ?? _palette.first;
   }
 
   void _saveHabit() {
     if (_nameController.text.trim().isEmpty) return;
 
-    ref
-        .read(habitProvider.notifier)
-        .addHabit(
-          name: _nameController.text.trim(),
-          icon: _selectedIcon,
-          color: _selectedColor,
-          frequency: _selectedFrequency,
-          targetValue: _targetGoal,
-        );
+    if (widget.habit != null) {
+      ref
+          .read(habitProvider.notifier)
+          .updateHabit(
+            widget.habit!.copyWith(
+              name: _nameController.text.trim(),
+              icon: _selectedIcon,
+              color: _selectedColor,
+              frequency: _selectedFrequency,
+              targetValue: _targetGoal,
+            ),
+          );
+    } else {
+      ref
+          .read(habitProvider.notifier)
+          .addHabit(
+            name: _nameController.text.trim(),
+            icon: _selectedIcon,
+            color: _selectedColor,
+            frequency: _selectedFrequency,
+            targetValue: _targetGoal,
+          );
+    }
 
     Navigator.pop(context);
   }
 
   @override
   Widget build(BuildContext context) {
-    // We recreate the page layout directly
     return Scaffold(
       body: SafeArea(
         child: Padding(
@@ -60,7 +77,6 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -68,20 +84,36 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
                     icon: const Icon(Icons.close, color: AppTheme.textMain),
                     onPressed: () => Navigator.pop(context),
                   ),
-                  const Text(
-                    'Add New Habit',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                  Text(
+                    widget.habit != null ? 'Edit Habit' : 'Add New Habit',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                  const SizedBox(width: 48), // Spacer to balance
+                  if (widget.habit != null)
+                    IconButton(
+                      icon: const Icon(
+                        Icons.delete_outline,
+                        color: AppTheme.danger,
+                      ),
+                      onPressed: () {
+                        ref
+                            .read(habitProvider.notifier)
+                            .deleteHabit(widget.habit!.id);
+                        Navigator.pop(context); // Close edit
+                        Navigator.pop(context); // Close detail
+                      },
+                    )
+                  else
+                    const SizedBox(width: 48),
                 ],
               ),
-
               Expanded(
                 child: SingleChildScrollView(
                   child: Column(
                     children: [
                       const SizedBox(height: 24),
-                      // Icon Selector Area
                       Wrap(
                         spacing: 12,
                         runSpacing: 12,
@@ -112,7 +144,6 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
                                 default:
                                   iconData = Icons.book;
                               }
-
                               return GestureDetector(
                                 onTap: () =>
                                     setState(() => _selectedIcon = iconKey),
@@ -148,8 +179,6 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
                       ),
 
                       const SizedBox(height: 32),
-
-                      // Habit Name
                       _buildInputGroup(
                         'Habit Name',
                         TextField(
@@ -161,7 +190,6 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
                         ),
                       ),
 
-                      // Frequency
                       _buildInputGroup(
                         'Frequency',
                         Row(
@@ -206,7 +234,6 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
                         ),
                       ),
 
-                      // Goal
                       _buildInputGroup(
                         'Goal',
                         Container(
@@ -244,7 +271,6 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
                         ),
                       ),
 
-                      // Choose Color
                       _buildInputGroup(
                         'Choose Color',
                         Row(
@@ -272,14 +298,11 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
                           }).toList(),
                         ),
                       ),
-
-                      const SizedBox(height: 60), // Spacer for button
+                      const SizedBox(height: 60),
                     ],
                   ),
                 ),
               ),
-
-              // Create Button pinned to bottom
               GestureDetector(
                 onTap: _saveHabit,
                 child: Container(
@@ -290,9 +313,9 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   alignment: Alignment.center,
-                  child: const Text(
-                    'Create Habit',
-                    style: TextStyle(
+                  child: Text(
+                    widget.habit != null ? 'Save Changes' : 'Create Habit',
+                    style: const TextStyle(
                       color: Colors.black,
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
