@@ -5,11 +5,8 @@ class DailyLog {
   final DateTime date;
   final int score;
 
-  DailyLog({
-    required this.habitId,
-    required DateTime date,
-    required this.score,
-  }) : date = DateTime(date.year, date.month, date.day);
+  DailyLog({required this.habitId, required DateTime date, required this.score})
+    : date = DateTime(date.year, date.month, date.day);
 
   Map<String, dynamic> toMap() {
     return {
@@ -29,5 +26,6 @@ class DailyLog {
 
   String toJson() => json.encode(toMap());
 
-  factory DailyLog.fromJson(String source) => DailyLog.fromMap(json.decode(source));
+  factory DailyLog.fromJson(String source) =>
+      DailyLog.fromMap(json.decode(source));
 }

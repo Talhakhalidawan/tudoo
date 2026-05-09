@@ -31,13 +31,19 @@ class LogNotifier extends StateNotifier<List<DailyLog>> {
 
   Future<void> logScore(String habitId, DateTime date, int score) async {
     final normalizedDate = DateTime(date.year, date.month, date.day);
-    
-    // Remove existing log for same habit and date
-    final newState = state.where((l) => 
-      !(l.habitId == habitId && l.date.isAtSameMomentAs(normalizedDate))
-    ).toList();
 
-    newState.add(DailyLog(habitId: habitId, date: normalizedDate, score: score));
+    // Remove existing log for same habit and date
+    final newState = state
+        .where(
+          (l) =>
+              !(l.habitId == habitId &&
+                  l.date.isAtSameMomentAs(normalizedDate)),
+        )
+        .toList();
+
+    newState.add(
+      DailyLog(habitId: habitId, date: normalizedDate, score: score),
+    );
     state = newState;
     await _saveLogs();
   }
