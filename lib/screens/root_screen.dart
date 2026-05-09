@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'home_screen.dart';
 import 'add_habit_screen.dart';
+import 'calendar_screen.dart';
+import 'settings_screen.dart';
 import '../theme.dart';
 
 class RootScreen extends StatefulWidget {
@@ -15,9 +17,12 @@ class _RootScreenState extends State<RootScreen> {
 
   final List<Widget> _screens = [
     const HomeScreen(),
-    const Center(child: Text('Calendar Placeholder')),
-    const Center(child: Text('Detail Placeholder')),
-    const Center(child: Text('Settings Placeholder')),
+    const CalendarScreen(),
+    const SizedBox.shrink(), // Center placeholder for FAB
+    const Center(
+      child: Text('Streaks Placeholder', style: TextStyle(color: Colors.grey)),
+    ),
+    const SettingsScreen(),
   ];
 
   void _onItemTapped(int index) {
